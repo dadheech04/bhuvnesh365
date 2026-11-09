@@ -26,3 +26,5 @@ yarn-error.log*
 !.vscode/extensions.json
 .idea
 .antigravity
+
+.vercel

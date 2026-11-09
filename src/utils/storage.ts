@@ -32,11 +32,12 @@ export const getTodayKey = (): string => new Date().toISOString().split('T')[0];
 
 // ─── Neon API sync helpers ────────────────────────────────────────────────────
 
-const BASE = '/api';
+const BASE = '/api/index';
 
-async function apiGet<T>(path: string): Promise<T | null> {
+async function apiGet<T>(resource: string, date?: string): Promise<T | null> {
   try {
-    const res = await fetch(`${BASE}${path}`);
+    const url = date ? `${BASE}?resource=${resource}&date=${date}` : `${BASE}?resource=${resource}`;
+    const res = await fetch(url);
     if (!res.ok) return null;
     return await res.json() as T;
   } catch {
@@ -44,9 +45,10 @@ async function apiGet<T>(path: string): Promise<T | null> {
   }
 }
 
-async function apiPost(path: string, body: unknown): Promise<boolean> {
+async function apiPost(resource: string, body: unknown, date?: string): Promise<boolean> {
   try {
-    const res = await fetch(`${BASE}${path}`, {
+    const url = date ? `${BASE}?resource=${resource}&date=${date}` : `${BASE}?resource=${resource}`;
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -70,7 +72,7 @@ export const storage = {
     }
   },
   async getProfileAsync(): Promise<UserProfile> {
-    const remote = await apiGet<UserProfile>('/profile');
+    const remote = await apiGet<UserProfile>('profile');
     if (remote) {
       localStorage.setItem(KEYS.PROFILE, JSON.stringify(remote));
       return remote;
@@ -79,7 +81,7 @@ export const storage = {
   },
   saveProfile(profile: UserProfile): void {
     localStorage.setItem(KEYS.PROFILE, JSON.stringify(profile));
-    apiPost('/profile', profile); // fire-and-forget sync to Neon
+    apiPost('profile', profile); // fire-and-forget sync to Neon
   },
 
   // Workouts
@@ -92,7 +94,7 @@ export const storage = {
     }
   },
   async getWorkoutsAsync(): Promise<WorkoutSession[]> {
-    const remote = await apiGet<WorkoutSession[]>('/workouts');
+    const remote = await apiGet<WorkoutSession[]>('workouts');
     if (remote && Array.isArray(remote)) {
       localStorage.setItem(KEYS.WORKOUTS, JSON.stringify(remote));
       return remote;
@@ -108,7 +110,7 @@ export const storage = {
       list.unshift(session);
     }
     localStorage.setItem(KEYS.WORKOUTS, JSON.stringify(list));
-    apiPost('/workouts', session); // sync to Neon
+    apiPost('workouts', session); // sync to Neon
   },
 
   // Cardio (Running, Cycling, Walking)
@@ -121,7 +123,7 @@ export const storage = {
     }
   },
   async getCardioSessionsAsync(): Promise<CardioSession[]> {
-    const remote = await apiGet<CardioSession[]>('/cardio');
+    const remote = await apiGet<CardioSession[]>('cardio');
     if (remote && Array.isArray(remote)) {
       localStorage.setItem(KEYS.CARDIO, JSON.stringify(remote));
       return remote;
@@ -132,7 +134,7 @@ export const storage = {
     const list = this.getCardioSessions();
     list.unshift(session);
     localStorage.setItem(KEYS.CARDIO, JSON.stringify(list));
-    apiPost('/cardio', session);
+    apiPost('cardio', session);
   },
 
   // Swimming
@@ -145,7 +147,7 @@ export const storage = {
     }
   },
   async getSwimmingSessionsAsync(): Promise<SwimmingSession[]> {
-    const remote = await apiGet<SwimmingSession[]>('/swimming');
+    const remote = await apiGet<SwimmingSession[]>('swimming');
     if (remote && Array.isArray(remote)) {
       localStorage.setItem(KEYS.SWIMMING, JSON.stringify(remote));
       return remote;
@@ -156,7 +158,7 @@ export const storage = {
     const list = this.getSwimmingSessions();
     list.unshift(session);
     localStorage.setItem(KEYS.SWIMMING, JSON.stringify(list));
-    apiPost('/swimming', session);
+    apiPost('swimming', session);
   },
 
   // Meditation
@@ -169,7 +171,7 @@ export const storage = {
     }
   },
   async getMeditationSessionsAsync(): Promise<MeditationSession[]> {
-    const remote = await apiGet<MeditationSession[]>('/meditation');
+    const remote = await apiGet<MeditationSession[]>('meditation');
     if (remote && Array.isArray(remote)) {
       localStorage.setItem(KEYS.MEDITATION, JSON.stringify(remote));
       return remote;
@@ -180,7 +182,7 @@ export const storage = {
     const list = this.getMeditationSessions();
     list.unshift(session);
     localStorage.setItem(KEYS.MEDITATION, JSON.stringify(list));
-    apiPost('/meditation', session);
+    apiPost('meditation', session);
   },
 
   // Nutrition
@@ -358,7 +360,7 @@ export const storage = {
     }
   },
   async getSportsActivitiesAsync(): Promise<SportsActivity[]> {
-    const remote = await apiGet<SportsActivity[]>('/sports');
+    const remote = await apiGet<SportsActivity[]>('sports');
     if (remote && Array.isArray(remote)) {
       localStorage.setItem(KEYS.SPORTS, JSON.stringify(remote));
       return remote;
@@ -369,7 +371,7 @@ export const storage = {
     const list = this.getSportsActivities();
     list.unshift(act);
     localStorage.setItem(KEYS.SPORTS, JSON.stringify(list));
-    apiPost('/sports', act);
+    apiPost('sports', act);
   },
 
   // Achievements
@@ -382,7 +384,7 @@ export const storage = {
     }
   },
   async getAchievementsAsync(): Promise<Achievement[]> {
-    const remote = await apiGet<Achievement[]>('/achievements');
+    const remote = await apiGet<Achievement[]>('achievements');
     if (remote && Array.isArray(remote) && remote.length > 0) {
       localStorage.setItem(KEYS.ACHIEVEMENTS, JSON.stringify(remote));
       return remote;
@@ -391,7 +393,7 @@ export const storage = {
   },
   saveAchievements(list: Achievement[]): void {
     localStorage.setItem(KEYS.ACHIEVEMENTS, JSON.stringify(list));
-    apiPost('/achievements', list);
+    apiPost('achievements', list);
   },
 
   // Full Backup & Restore
@@ -426,7 +428,7 @@ export const storage = {
   // DB Health Check
   async checkDbConnection(): Promise<boolean> {
     try {
-      const res = await fetch('/api/health');
+      const res = await fetch('/api/index?resource=health');
       const data = await res.json();
       return data.status === 'healthy';
     } catch {
